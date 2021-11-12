@@ -60,3 +60,21 @@ def test_allOf_resolution(petstore_expanded_spec):
     tag = items.properties['tag']
     tag = items.properties['tag']
     assert tag.type == 'string'
+
+
+def test_ref_allof_handling(with_ref_allof):
+    """
+    Tests that allOfs do not modify the originally loaded value of a $ref they
+    includes (which would cause all references to that schema to be modified)
+    """
+    spec = OpenAPI(with_ref_allof)
+    referenced_schema = spec.components.schemas['Example']
+
+    # this should have only one property; the allOf from 
+    # paths['/allof-example']get.responses['200'].content['application/json'].schema
+    # should not modify the component
+    assert len(referenced_schema.properties) == 1, \
+           "Unexpectedly found {} properties on componenets.schemas['Example']: {}".format(
+                   len(referenced_schema.properties),
+                   ", ".join(referenced_schema.properties.keys()),
+            )

@@ -136,3 +136,12 @@ def with_broken_links():
     Provides a spec with broken links defined
     """
     yield _get_parsed_yaml("with-broken-links.yaml")
+
+
+@pytest.fixture
+def with_ref_allof():
+    """
+    Provides a spec that includes a reference to a component schema in and out of
+    an allOf
+    """
+    yield _get_parsed_yaml("ref-allof.yaml")
