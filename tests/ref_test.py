@@ -71,6 +71,7 @@ def test_resolving_nested_allof_ref(with_nested_allof_ref):
 
     schema = spec.paths['/example'].get.responses['200'].content['application/json'].schema
     assert type(schema.properties['other']) == Schema
-    assert schema.properties['other'].type == str
+    assert schema.properties['other'].type == 'string'
 
     assert type(schema.properties['data'].items) == Schema
+    assert 'bar' in schema.properties['data'].items.properties
