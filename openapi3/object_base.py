@@ -359,6 +359,34 @@ class ObjectBase(object):
                 self.extensions[k[2:]] = v
                 self._accessed_members.append(k)
 
+    def _clone(self):
+        """
+        Returns a copy of this object
+        """
+        cls = self.__class__
+        inst = cls.__new__(cls)
+
+        for c in self.__slots__:
+            val = getattr(self, c)
+            if issubclass(type(val), ObjectBase) or isinstance(val, Map):
+                val = val._clone()
+            elif isinstance(val, list):
+                new_val = []
+                for cur in val:
+                    if issubclass(type(cur), ObjectBase) or isinstance(cur, Map):
+                        new_val.append(cur._clone())
+                    else:
+                        new_val.append(cur)
+                val = new_val
+
+            setattr(inst, c, val)
+
+        for c in ObjectBase.__slots__:
+            if hasattr(self, c):
+                setattr(inst, c, getattr(self, c))
+
+        return inst
+
     @classmethod
     def get_object_type(cls, typename):
         """
@@ -477,8 +505,6 @@ class ObjectBase(object):
                     e.element = self
                     raise
 
-                # FIXME - will break if multiple things reference the same
-                # node
                 resolved_value._original_ref = value
 
                 # resolved
@@ -541,7 +567,7 @@ class Map(dict):
     The Map object wraps a python dict and parses its values into the chosen
     type or types.
     """
-    __slots__ = ['dct', 'path', 'raw_element', '_root']
+    __slots__ = ['path', 'raw_element', '_root']
 
     def __init__(self, path, raw_element, object_types, root):
         """
@@ -615,14 +641,31 @@ class Map(dict):
                     e.element = self
                     raise
 
-                # FIXME - will break if multiple things reference the same
-                # node
                 resolved_value._original_ref = value
 
                 # resolved
                 self[key] = resolved_value
             else:
                 value._resolve_references()
+
+    def _clone(self):
+        """
+        Returns a copy of this object and all its values
+        """
+        ret = Map.__new__(self.__class__)
+
+        for c in self.__slots__:
+            setattr(ret, c, getattr(self, c))
+
+        dct = {}
+        for k, v in self.items():
+            if issubclass(type(v), ObjectBase) or isinstance(v, Map):
+                dct[k] = v._clone()
+            else:
+                dct[k] = v
+
+        ret.update(dct)
+        return ret
 
     def get_path(self):
         """
